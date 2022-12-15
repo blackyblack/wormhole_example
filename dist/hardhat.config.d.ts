@@ -1,0 +1,12 @@
+import "@typechain/hardhat";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-etherscan";
+import "@nomiclabs/hardhat-waffle";
+import "@openzeppelin/hardhat-upgrades";
+import "@typechain/hardhat";
+import "dotenv/config";
+import { HardhatUserConfig } from "hardhat/config";
+import "./src/tasks/deployment";
+import "./src/tasks/deployment-token";
+declare const config: HardhatUserConfig;
+export default config;

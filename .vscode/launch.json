@@ -1,0 +1,19 @@
+{
+  // Используйте IntelliSense, чтобы узнать о возможных атрибутах.
+  // Наведите указатель мыши, чтобы просмотреть описания существующих атрибутов.
+  // Для получения дополнительной информации посетите: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "hardhat run",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/hardhat",
+      "cwd": "${workspaceFolder}",
+      "args": ["bridge-confirm-back", "--network", "goerli", "--vaabytes", "AQAAAAABAMl5WcDmrx/e+mNBGRVtrPsOlIisvC9q74zyHylanlwxAN4LuebKhVVefyVPnhsqxtO1CR7m49Tio/fB6HYsSKIAY5mt2AAAAAIABQAAAAAAAAAAAAAAADd9VaeSjARuGO67YZd+cU0qdkcqAAAAAAAAA1UPAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF9eEAAAAAAAAAAAAAAAAAlMtuL3g7n1J0zNGcfjFr1bra2pgAAgAAAAAAAAAAAAAAAFZfvmBaFh4btS9FTK/l4OLvxgDaAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="]
+    }
+  ]
+}

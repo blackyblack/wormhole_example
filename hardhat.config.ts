@@ -8,7 +8,6 @@ import "dotenv/config";
 import { HardhatUserConfig } from "hardhat/config";
 
 import "./src/tasks/deployment";
-import "./src/tasks/deployment-token";
 
 const ALCHEMY_API = process.env.ALCHEMY_API || "";
 const INFURA_API_KEY = process.env.INFURA_API_KEY || "";

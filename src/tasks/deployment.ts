@@ -9,21 +9,25 @@ import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import fetch from "node-fetch";
 
-const WORMHOLE_REST_API = "https://wormhole-v2-testnet-api.certus.one"
-const bridgeGoerliAddress = "0x706abc4E45D419950511e474C7B9Ed348A4a716c"
-const tokenGoerliBridgeAddress = "0xF890982f9310df57d00f659cf4fd87e65adEd8d7"
+const WORMHOLE_REST_API = "https://wormhole-v2-testnet-api.certus.one";
+const bridgeGoerliAddress = "0x706abc4E45D419950511e474C7B9Ed348A4a716c";
+const tokenGoerliBridgeAddress = "0xF890982f9310df57d00f659cf4fd87e65adEd8d7";
 
-const bridgePolygonAddress = "0x0CBE91CF822c73C2315FB05100C2F714765d5c20"
-const tokenBridgePolygonAddress = "0x377D55a7928c046E18eEbb61977e714d2a76472a"
+const bridgePolygonAddress = "0x0CBE91CF822c73C2315FB05100C2F714765d5c20";
+const tokenBridgePolygonAddress = "0x377D55a7928c046E18eEbb61977e714d2a76472a";
 
 // execute deploy task and put treasury address here
-const treasuryGoerliAddress = "0x565fbE605A161e1bb52f454caFe5E0E2EfC600dA"
+const treasuryGoerliAddress = "0x565fbE605A161e1bb52f454caFe5E0E2EfC600dA";
 // execute deploy task on Mumbai and put treasury address here
-const treasuryPolygonAddress = "0xB05ceA963fFfa5110E412Bac6188DcaACe09E186"
+const treasuryPolygonAddress = "0xB05ceA963fFfa5110E412Bac6188DcaACe09E186";
 // execute deploy-token task and put token address here
-const tokenAddress = "0x94CB6E2F783b9F5274ccd19c7e316bd5badADa98"
+const tokenAddress = "0x94CB6E2F783b9F5274ccd19c7e316bd5badADa98";
 // execute attest and attest-confirm tasks and put wrapped token address here
-const wrappedTokenAddress = "0xb541C0f67476087323B226C8dF94f03CeA4D4a6c"
+const wrappedTokenAddress = "0xb541C0f67476087323B226C8dF94f03CeA4D4a6c";
+
+const treasuryMessengerGoerliAddress = "0x332dc886e197837f73F2DE46BF12742A167a1A83";
+const treasuryMessengerPolygonAddress = "0x8e4F426B908C439a77f5419dECD22c794E0479d8";
+
 
 const GOERLI_WORMHOLE_CHAIN_ID = 2
 const POLYGON_WORMHOLE_CHAIN_ID = 5
@@ -209,5 +213,77 @@ task("bridge-confirm-back", "Receive Tokens on Sender side")
     const targetTokenBridge = (await hre.ethers.getContractAt("ITokenBridge", tokenGoerliBridgeAddress, signer));
     const completeTransferTx = await targetTokenBridge.completeTransfer(Buffer.from(args.vaabytes, "base64"));
     console.log("Complete Transfer TX: ", await completeTransferTx.wait());
+  }
+);
+
+// call from both networks
+task("deploy-message", "Deploy TreasuryMessenger").setAction(
+  async (args, hre) => {
+    const signer = await getSigner(hre);
+    const TreasuryFactory = (await hre.ethers.getContractFactory("TreasuryMessenger", signer));
+    const treasury = await TreasuryFactory.deploy();
+    await treasury.deployed();
+
+    console.log("TreasuryMessenger",
+      `has been deployed at ${treasury.address}`,
+      `on the chain ${hre.network.name} (chainId: ${hre.ethers.provider.network.chainId})`
+    );
+  }
+);
+
+// call from sender network
+task("bridge-send-message", "Send Tokens and Message to Recipient side")
+  .setAction(
+  async (args, hre) => {
+    const signer = await getSigner(hre);
+    const amount = hre.ethers.utils.parseUnits("1", "18");
+
+    const token = (await hre.ethers.getContractAt("Token", tokenAddress, signer));
+    console.log(`Sending 1 Token to the Treasury`);
+    const tx_send = await token.transfer(treasuryMessengerGoerliAddress, amount, {
+      gasLimit: 2000000,
+    });
+    await tx_send.wait();
+
+    const treasury = (await hre.ethers.getContractAt("TreasuryMessenger", treasuryMessengerGoerliAddress, signer));
+    console.log(`Approving 1 Tokens to be bridged by Token Bridge`);
+    const tx_approve = await treasury.approveTokenBridge(amount, {
+      gasLimit: 2000000,
+    });
+    await tx_approve.wait();
+
+    console.log(`Bridging 1 Tokens`);
+    const payload = "Hello world!";
+    const targetRecepient = Buffer.from(tryNativeToHexString(treasuryMessengerPolygonAddress, "polygon"), 'hex');
+    const tx = await (await treasury.bridgeTokenMsg(amount, POLYGON_WORMHOLE_CHAIN_ID, targetRecepient, payload)).wait();
+    const emitterAddr = getEmitterAddressEth(tokenGoerliBridgeAddress);
+    const seq = parseSequenceFromLogEth(tx, bridgeGoerliAddress);
+    const vaaURL =  `${WORMHOLE_REST_API}/v1/signed_vaa/${GOERLI_WORMHOLE_CHAIN_ID}/${emitterAddr}/${seq}`;
+    let vaaBytes = await (await fetch(vaaURL)).json();
+    while(!vaaBytes.vaaBytes){
+      console.log("VAA not found, retrying in 5s!");
+      await new Promise((r) => setTimeout(r, 5000)); //Timeout to let Guardiand pick up log and have VAA ready
+      vaaBytes = await (await fetch(vaaURL)).json();
+    }
+
+    console.log(
+      `Network(${hre.network.name}) Emitted VAA: `,
+      vaaBytes.vaaBytes
+    );
+  }
+);
+
+// call from recipient network
+task("bridge-confirm-message", "Receive Tokens and Message")
+  .addParam("vaabytes", "VAA bytes base64 encoded")
+  .setAction(
+  async (args, hre) => {
+    const signer = await getSigner(hre);
+    const treasury = (await hre.ethers.getContractAt("TreasuryMessenger", treasuryMessengerPolygonAddress, signer));
+    const completeTransferTx = await treasury.completeTransferPolygon(Buffer.from(args.vaabytes, "base64"));
+    console.log("Complete Transfer TX: ", await completeTransferTx.wait());
+
+    const text = await treasury.getCurrentMsg();
+    console.log("Received " + text);
   }
 );

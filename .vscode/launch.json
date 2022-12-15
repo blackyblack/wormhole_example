@@ -10,7 +10,7 @@
       ],
       "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/hardhat",
       "cwd": "${workspaceFolder}",
-      "args": ["bridge-confirm-message", "--network", "matic", "--vaabytes", "AQAAAAABANFf66qAnaHTz+NWLSMSTqUX8O8RcY4ZuK0Ow94a5Z7velw416soiJy1QeYYt8WeeBAwzKCQz1OlBGUyh+KJrAkAY5sQeAAAAAEAAgAAAAAAAAAAAAAAAPiQmC+TEN9X0A9lnPT9h+Za3tjXAAAAAAAAC7cBAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF9eEAAAAAAAAAAAAAAAAAlMtuL3g7n1J0zNGcfjFr1bra2pgAAgAAAAAAAAAAAAAAAI5PQmuQjEOad/VBnezSLHlOBHnYAAUAAAAAAAAAAAAAAAAzLciG4ZeDf3Py3ka/EnQqFnoag0hlbGxvIHdvcmxkIQ=="]
+      "args": ["bridge-confirm-message-back", "--network", "goerli", "--vaabytes", "AQAAAAABAKnRIabI93AD49GUxL/oQ1NMIstsimjjyXf6n3W3QxyZLsEvnFDrNpW/PgAkQMcdFRyVEYgI+Stt0i8mmH1yCkcAY5ssXAAAAAEABQAAAAAAAAAAAAAAADd9VaeSjARuGO67YZd+cU0qdkcqAAAAAAAAA2sPAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF9eEAAAAAAAAAAAAAAAAAlMtuL3g7n1J0zNGcfjFr1bra2pgAAgAAAAAAAAAAAAAAADMtyIbhl4N/c/LeRr8SdCoWehqDAAIAAAAAAAAAAAAAAACOT0JrkIxDmnf1QZ3s0ix5TgR52EhlbGxvIHdvcmxkIGZyb20gUG9seWdvbiE="]
     }
   ]
 }

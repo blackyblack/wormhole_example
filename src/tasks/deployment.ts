@@ -287,3 +287,57 @@ task("bridge-confirm-message", "Receive Tokens and Message")
     console.log("Received " + text);
   }
 );
+
+// call from sender network
+task("bridge-send-message-back", "Send Tokens and message to back to Sender side")
+  .setAction(
+  async (args, hre) => {
+    const signer = await getSigner(hre);
+    const amount = hre.ethers.utils.parseUnits("1", "18");
+
+    const treasury = (await hre.ethers.getContractAt("TreasuryMessenger", treasuryMessengerPolygonAddress, signer));
+    console.log(`Approving 1 Tokens to be bridged by Token Bridge`);
+    const tx_approve = await treasury.approveWrappedTokenBridge(amount, {
+      gasLimit: 2000000,
+    });
+    await tx_approve.wait();
+
+    console.log(`Bridging 1 Tokens`);
+    const payload = "Hello world from Polygon!";
+    const targetRecepient = Buffer.from(tryNativeToHexString(treasuryMessengerGoerliAddress, "ethereum"), 'hex');
+    const tx_send = await treasury.bridgeTokenMsgPolygon(amount, GOERLI_WORMHOLE_CHAIN_ID, targetRecepient, payload, {
+      gasLimit: 2000000,
+    });
+    const tx_receipt = await tx_send.wait();
+
+    const emitterAddr = getEmitterAddressEth(tokenBridgePolygonAddress);
+    const seq = parseSequenceFromLogEth(tx_receipt, bridgePolygonAddress);
+    const vaaURL =  `${WORMHOLE_REST_API}/v1/signed_vaa/${POLYGON_WORMHOLE_CHAIN_ID}/${emitterAddr}/${seq}`;
+    let vaaBytes = await (await fetch(vaaURL)).json();
+    while(!vaaBytes.vaaBytes){
+      console.log("VAA not found, retrying in 5s!");
+      await new Promise((r) => setTimeout(r, 5000)); //Timeout to let Guardiand pick up log and have VAA ready
+      vaaBytes = await (await fetch(vaaURL)).json();
+    }
+
+    console.log(
+      `Network(${hre.network.name}) Emitted VAA: `,
+      vaaBytes.vaaBytes
+    );
+  }
+);
+
+// call from recipient network
+task("bridge-confirm-message-back", "Receive Tokens and Message on Sender side")
+  .addParam("vaabytes", "VAA bytes base64 encoded")
+  .setAction(
+  async (args, hre) => {
+    const signer = await getSigner(hre);
+    const treasury = (await hre.ethers.getContractAt("TreasuryMessenger", treasuryMessengerGoerliAddress, signer));
+    const completeTransferTx = await treasury.completeTransfer(Buffer.from(args.vaabytes, "base64"));
+    console.log("Complete Transfer TX: ", await completeTransferTx.wait());
+
+    const text = await treasury.getCurrentMsg();
+    console.log("Received " + text);
+  }
+);
